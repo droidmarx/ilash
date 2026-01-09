@@ -844,7 +844,7 @@
             box-shadow: 0 4px 12px rgba(251, 191, 36, 0.5);
         }
 
-        /* Estilos para o Loading */
+        /* Estilos para o Loading - Animação aprimorada com anéis concêntricos */
         #loading-overlay {
             position: fixed;
             top: 0;
@@ -857,25 +857,67 @@
             align-items: center;
             z-index: 9999;
             transition: opacity 0.5s ease-out;
+            opacity: 0;
         }
         .dark-theme #loading-overlay {
             background: rgba(17, 24, 39, 0.9);
         }
-        .spinner {
+        .loading-container {
+            position: relative;
             width: 80px;
             height: 80px;
-            border: 8px solid var(--primary-light);
-            border-top-color: var(--secondary-light);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
         }
-        .dark-theme .spinner {
-            border-color: var(--primary-dark);
+        .loading-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+        .loading-ring:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            border-top-color: var(--primary-light);
+            animation-duration: 1s;
+        }
+        .loading-ring:nth-child(2) {
+            width: 60px;
+            height: 60px;
+            top: 10px;
+            left: 10px;
+            border-top-color: var(--secondary-light);
+            animation-duration: 1.2s;
+            animation-direction: reverse;
+        }
+        .loading-ring:nth-child(3) {
+            width: 40px;
+            height: 40px;
+            top: 20px;
+            left: 20px;
+            border-top-color: var(--primary-light);
+            animation-duration: 0.8s;
+            animation-delay: 0.2s;
+        }
+        .dark-theme .loading-ring:nth-child(1) {
+            border-top-color: var(--primary-dark);
+        }
+        .dark-theme .loading-ring:nth-child(2) {
             border-top-color: var(--secondary-dark);
         }
+        .dark-theme .loading-ring:nth-child(3) {
+            border-top-color: var(--primary-dark);
+        }
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: rotate(360deg);
+                opacity: 1;
+            }
         }
 
         /* Estilos para a div de Próximo Agendamento minimizável */
@@ -961,7 +1003,11 @@
 <body>
     <!-- Loading Overlay -->
     <div id="loading-overlay">
-        <div class="spinner"></div>
+        <div class="loading-container">
+            <div class="loading-ring"></div>
+            <div class="loading-ring"></div>
+            <div class="loading-ring"></div>
+        </div>
     </div>
 
     <nav class="navbar navbar-expand-lg">
@@ -1362,6 +1408,21 @@
         let allFutureAppointments = []; // Armazena todos os agendamentos futuros ordenados
         let currentAppointmentIndex = 0; // Índice do agendamento atual sendo exibido
 
+        // Funções de loading
+        function showLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.style.opacity = '1', 10);
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 500);
+        }
+
         function formatDate(dateStr) {
             if (!dateStr) return '';
             const [year, month, day] = dateStr.split('-');
@@ -1465,6 +1526,7 @@
             if (!confirm('Tem certeza que deseja excluir este cliente?')) {
                 return;
             }
+            showLoading();
             try {
                 const response = await fetch(`${API_CLIENTS}/${id}`, {
                     method: 'DELETE',
@@ -1478,34 +1540,41 @@
             } catch (error) {
                 console.error('Erro ao excluir cliente:', error);
                 alert('Erro ao excluir cliente. Verifique o console para mais detalhes.');
+            } finally {
+                hideLoading();
             }
         }
 
         async function showClientDetails(id) {
-            const clients = await getClients();
-            const client = clients.find(c => c.id === id);
-            if (!client) {
-                alert('Cliente não encontrado.');
-                return;
+            showLoading();
+            try {
+                const clients = await getClients();
+                const client = clients.find(c => c.id === id);
+                if (!client) {
+                    alert('Cliente não encontrado.');
+                    return;
+                }
+
+                const clientDetailsList = document.getElementById('client-details-list');
+                clientDetailsList.innerHTML = `
+                    <li><i class="bi bi-person-fill"></i> <strong>Nome:</strong> ${client.name}</li>
+                    <li><i class="bi bi-whatsapp"></i> <strong>WhatsApp:</strong> ${client.whatsapp}</li>
+                    <li><i class="bi bi-calendar-event-fill"></i> <strong>Agendamento:</strong> ${formatDate(client.appointment_date)} às ${formatTime(client.appointment_time)}</li>
+                    <li><i class="bi bi-tag-fill"></i> <strong>Tipo:</strong> ${client.appointment_type === 'application' ? 'Aplicação' : 'Manutenção'}</li>
+                    <li><i class="bi bi-currency-dollar"></i> <strong>Valor Aplicação:</strong> R$ ${parseFloat(client.application_value).toFixed(2).replace('.', ',')}</li>
+                    <li><i class="bi bi-currency-dollar"></i> <strong>Valor Manutenção:</strong> R$ ${parseFloat(client.maintenance_value).toFixed(2).replace('.', ',')}</li>
+                    <li><i class="bi bi-eye-fill"></i> <strong>Modelo Cílios:</strong> ${eyelashModels[client.eyelash_model] || client.eyelash_model}</li>
+                `;
+
+                document.getElementById('editClientButton').onclick = () => editClient(client.id);
+                document.getElementById('deleteClientButton').onclick = () => deleteClient(client.id);
+                document.getElementById('whatsappApplicationLink').href = generateWhatsAppLink(client, 'application');
+                document.getElementById('whatsappMaintenanceLink').href = generateWhatsAppLink(client, 'maintenance');
+
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('clientDetailsModal')).show();
+            } finally {
+                hideLoading();
             }
-
-            const clientDetailsList = document.getElementById('client-details-list');
-            clientDetailsList.innerHTML = `
-                <li><i class="bi bi-person-fill"></i> <strong>Nome:</strong> ${client.name}</li>
-                <li><i class="bi bi-whatsapp"></i> <strong>WhatsApp:</strong> ${client.whatsapp}</li>
-                <li><i class="bi bi-calendar-event-fill"></i> <strong>Agendamento:</strong> ${formatDate(client.appointment_date)} às ${formatTime(client.appointment_time)}</li>
-                <li><i class="bi bi-tag-fill"></i> <strong>Tipo:</strong> ${client.appointment_type === 'application' ? 'Aplicação' : 'Manutenção'}</li>
-                <li><i class="bi bi-currency-dollar"></i> <strong>Valor Aplicação:</strong> R$ ${parseFloat(client.application_value).toFixed(2).replace('.', ',')}</li>
-                <li><i class="bi bi-currency-dollar"></i> <strong>Valor Manutenção:</strong> R$ ${parseFloat(client.maintenance_value).toFixed(2).replace('.', ',')}</li>
-                <li><i class="bi bi-eye-fill"></i> <strong>Modelo Cílios:</strong> ${eyelashModels[client.eyelash_model] || client.eyelash_model}</li>
-            `;
-
-            document.getElementById('editClientButton').onclick = () => editClient(client.id);
-            document.getElementById('deleteClientButton').onclick = () => deleteClient(client.id);
-            document.getElementById('whatsappApplicationLink').href = generateWhatsAppLink(client, 'application');
-            document.getElementById('whatsappMaintenanceLink').href = generateWhatsAppLink(client, 'maintenance');
-
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('clientDetailsModal')).show();
         }
 
         function generateWhatsAppLink(client, type) {
@@ -1523,8 +1592,10 @@
             return `https://api.whatsapp.com/send?phone=${client.whatsapp}&text=${encodeURIComponent(message)}`;
         }
 
-        function openWhatsAppLink(id) {
-            getClients().then(clients => {
+        async function openWhatsAppLink(id) {
+            showLoading();
+            try {
+                const clients = await getClients();
                 const client = clients.find(c => c.id === id);
                 if (client) {
                     const link = generateWhatsAppLink(client, client.appointment_type); // Usa o tipo de agendamento do cliente
@@ -1532,7 +1603,9 @@
                 } else {
                     alert('Cliente não encontrado.');
                 }
-            });
+            } finally {
+                hideLoading();
+            }
         }
 
         function validateForm(client) {
@@ -1559,8 +1632,7 @@
             return true;
         }
 
-        async function updateAppointmentsList() {
-            const clients = await getClients();
+        function updateAppointmentsListWithClients(clients) {
             const listBody = document.getElementById('appointments-list-body');
             listBody.innerHTML = '';
 
@@ -1599,8 +1671,7 @@
             }
         }
 
-        async function updateClientsTable(searchTerm = '') {
-            const clients = await getClients();
+        function updateClientsTableWithClients(clients, searchTerm = '') {
             const tbody = document.getElementById('clients-table-body');
             tbody.innerHTML = '';
             let filteredClients = clients.map(client => ({ ...client }));
@@ -1632,8 +1703,7 @@
             });
         }
 
-        async function updateCalendar() {
-            const clients = await getClients();
+        function updateCalendarWithClients(clients) {
             const calendar = document.getElementById('calendar');
             const calendarTitle = document.getElementById('calendarTitle');
             const year = currentDate.getFullYear();
@@ -1675,45 +1745,49 @@
         }
 
         async function showDayEvents(dateStr) {
-            const clients = await getClients();
-            const dayEventsList = document.getElementById('day-events-list');
-            dayEventsList.innerHTML = '';
+            showLoading();
+            try {
+                const clients = await getClients();
+                const dayEventsList = document.getElementById('day-events-list');
+                dayEventsList.innerHTML = '';
 
-            const events = clients.filter(client => client.appointment_date === dateStr)
-                .sort((a, b) => {
-                    const timeA = a.appointment_time;
-                    const timeB = b.appointment_time;
-                    return timeA.localeCompare(timeB);
-                });
+                const events = clients.filter(client => client.appointment_date === dateStr)
+                    .sort((a, b) => {
+                        const timeA = a.appointment_time;
+                        const timeB = b.appointment_time;
+                        return timeA.localeCompare(timeB);
+                    });
 
-            if (events.length > 0) {
-                events.forEach(event => {
-                    const li = document.createElement('li');
-                    const badgeClass = event.appointment_type === 'application' ? 'badge-application' : 'badge-maintenance';
-                    const badgeText = event.appointment_type === 'application' ? 'Aplicação' : 'Manutenção';
-                    li.innerHTML = `
-                        <div>
-                            <p><strong>${event.name}</strong> - ${formatTime(event.appointment_time)}</p>
-                            <p><span class="${badgeClass}">${badgeText}</span></p>
-                        </div>
-                        <div class="event-actions">
-                            <i class="bi bi-info-circle-fill icon-btn ok-btn" onclick="showClientDetails('${event.id}')"></i>
-                            <i class="bi bi-whatsapp icon-btn whatsapp-btn" onclick="openWhatsAppLink('${event.id}')"></i>
-                            <i class="bi bi-pencil-square icon-btn apply-btn" onclick="editClient('${event.id}')"></i>
-                            <i class="bi bi-wrench-adjustable-fill icon-btn maint-btn" onclick="openNewMaintenance('${event.id}')"></i>
-                        </div>
-                    `;
-                    dayEventsList.appendChild(li);
-                });
-            } else {
-                dayEventsList.innerHTML = '<li class="p-3 text-center text-muted">Nenhum agendamento para este dia.</li>';
+                if (events.length > 0) {
+                    events.forEach(event => {
+                        const li = document.createElement('li');
+                        const badgeClass = event.appointment_type === 'application' ? 'badge-application' : 'badge-maintenance';
+                        const badgeText = event.appointment_type === 'application' ? 'Aplicação' : 'Manutenção';
+                        li.innerHTML = `
+                            <div>
+                                <p><strong>${event.name}</strong> - ${formatTime(event.appointment_time)}</p>
+                                <p><span class="${badgeClass}">${badgeText}</span></p>
+                            </div>
+                            <div class="event-actions">
+                                <i class="bi bi-info-circle-fill icon-btn ok-btn" onclick="showClientDetails('${event.id}')"></i>
+                                <i class="bi bi-whatsapp icon-btn whatsapp-btn" onclick="openWhatsAppLink('${event.id}')"></i>
+                                <i class="bi bi-pencil-square icon-btn apply-btn" onclick="editClient('${event.id}')"></i>
+                                <i class="bi bi-wrench-adjustable-fill icon-btn maint-btn" onclick="openNewMaintenance('${event.id}')"></i>
+                            </div>
+                        `;
+                        dayEventsList.appendChild(li);
+                    });
+                } else {
+                    dayEventsList.innerHTML = '<li class="p-3 text-center text-muted">Nenhum agendamento para este dia.</li>';
+                }
+
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('dayEventsModal')).show();
+            } finally {
+                hideLoading();
             }
-
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('dayEventsModal')).show();
         }
 
-        async function updateNextAppointment(index = 0) {
-            const clients = await getClients();
+        function updateNextAppointmentWithClients(clients, index = 0) {
             const now = new Date();
             const nowDateTime = now.getTime();
             
@@ -1761,78 +1835,7 @@
             }
         }
 
-        // Novo: Função para abrir o modal de reagendamento
-        function openRescheduleModal(client) {
-            document.getElementById('rescheduleClientId').value = client.id;
-            document.getElementById('rescheduleClientName').textContent = client.name;
-            // Preenche a data e hora atuais para facilitar
-            document.getElementById('reschedule_date').value = client.appointment_date;
-            document.getElementById('reschedule_time').value = client.appointment_time;
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('rescheduleModal')).show();
-        }
-
-        async function editClient(id) {
-            const clients = await getClients();
-            const client = clients.find(c => c.id === id);
-            if (!client) {
-                alert('Cliente não encontrado.');
-                return;
-            }
-            const modal = document.getElementById('cadastroModal');
-            const modalTitle = document.getElementById('cadastroModalLabel');
-            modalTitle.textContent = 'Editar Cliente';
-            document.getElementById('editId').value = id;
-            document.getElementById('name').value = client.name;
-            document.getElementById('whatsapp').value = client.whatsapp;
-            document.getElementById('appointment_type').value = client.appointment_type;
-            document.getElementById('appointment_date').value = client.appointment_date;
-            document.getElementById('appointment_time').value = client.appointment_time;
-            document.getElementById('application_value').value = client.application_value;
-            document.getElementById('maintenance_value').value = client.maintenance_value;
-            document.getElementById('eyelash_model').value = client.eyelash_model;
-            updateAppointmentLabels();
-            bootstrap.Modal.getOrCreateInstance(modal).show();
-            bootstrap.Modal.getInstance(document.getElementById('clientDetailsModal')).hide();
-        }
-
-        async function openNewMaintenance(id) {
-            const modal = document.getElementById('newMaintenanceModal');
-            document.getElementById('maintenanceId').value = id;
-            document.getElementById('new_maintenance_date').value = '';
-            document.getElementById('new_maintenance_time').value = '';
-            document.getElementById('new_maintenance_value').value = '';
-            document.getElementById('new_eyelash_model').value = '';
-            bootstrap.Modal.getOrCreateInstance(modal).show();
-        }
-
-        function searchClients() {
-            const searchInput = document.getElementById('searchInput').value;
-            updateClientsTable(searchInput);
-        }
-
-        function toggleSection(sectionId) {
-            // ATUALIZADO: Inclui a nova seção 'expired-clients-list'
-            const sections = ['appointments-list','expired-clients-list',  'agenda', 'clients-list']; 
-            sections.forEach(id => {
-                const section = document.getElementById(id);
-                if (id === sectionId) {
-                    // Se o usuário clicar na seção ativa, minimiza
-                    if(section.classList.contains('expanded')) {
-                        section.classList.remove('expanded');
-                        section.classList.add('minimized');
-                    } else {
-                        section.classList.remove('minimized');
-                        section.classList.add('expanded');
-                    }
-                } else {
-                    section.classList.add('minimized');
-                    section.classList.remove('expanded');
-                }
-            });
-        }
-
-        async function updateExpiredClientsList() {
-            const clients = await getClients();
+        function updateExpiredClientsListWithClients(clients) {
             const listBody = document.getElementById('expired-clients-list-body');
             listBody.innerHTML = '';
 
@@ -1870,6 +1873,110 @@
             }
         }
 
+        // Novo: Função para abrir o modal de reagendamento
+        function openRescheduleModal(client) {
+            document.getElementById('rescheduleClientId').value = client.id;
+            document.getElementById('rescheduleClientName').textContent = client.name;
+            // Preenche a data e hora atuais para facilitar
+            document.getElementById('reschedule_date').value = client.appointment_date;
+            document.getElementById('reschedule_time').value = client.appointment_time;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('rescheduleModal')).show();
+        }
+
+        async function editClient(id) {
+            showLoading();
+            try {
+                const clients = await getClients();
+                const client = clients.find(c => c.id === id);
+                if (!client) {
+                    alert('Cliente não encontrado.');
+                    return;
+                }
+                const modal = document.getElementById('cadastroModal');
+                const modalTitle = document.getElementById('cadastroModalLabel');
+                modalTitle.textContent = 'Editar Cliente';
+                document.getElementById('editId').value = id;
+                document.getElementById('name').value = client.name;
+                document.getElementById('whatsapp').value = client.whatsapp;
+                document.getElementById('appointment_type').value = client.appointment_type;
+                document.getElementById('appointment_date').value = client.appointment_date;
+                document.getElementById('appointment_time').value = client.appointment_time;
+                document.getElementById('application_value').value = client.application_value;
+                document.getElementById('maintenance_value').value = client.maintenance_value;
+                document.getElementById('eyelash_model').value = client.eyelash_model;
+                updateAppointmentLabels();
+                bootstrap.Modal.getOrCreateInstance(modal).show();
+                bootstrap.Modal.getInstance(document.getElementById('clientDetailsModal')).hide();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function openNewMaintenance(id) {
+            showLoading();
+            try {
+                const clients = await getClients();
+                const client = clients.find(c => c.id === id);
+                if (!client) {
+                    alert('Cliente não encontrado.');
+                    return;
+                }
+                const modal = document.getElementById('newMaintenanceModal');
+                document.getElementById('maintenanceId').value = id;
+                document.getElementById('new_maintenance_date').value = '';
+                document.getElementById('new_maintenance_time').value = '';
+                document.getElementById('new_maintenance_value').value = client.maintenance_value || '';
+                document.getElementById('new_eyelash_model').value = client.eyelash_model || '';
+                bootstrap.Modal.getOrCreateInstance(modal).show();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function searchClients() {
+            const searchInput = document.getElementById('searchInput').value;
+            updateAllDataWithSearch(searchInput);
+        }
+
+        async function updateAllDataWithSearch(searchTerm = '') {
+            showLoading();
+            try {
+                const clients = await getClients();
+                updateClientsTableWithClients(clients, searchTerm);
+                updateCalendarWithClients(clients);
+                updateAppointmentsListWithClients(clients);
+                updateNextAppointmentWithClients(clients); 
+                updateExpiredClientsListWithClients(clients);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function toggleSection(sectionId) {
+            // ATUALIZADO: Inclui a nova seção 'expired-clients-list'
+            const sections = ['appointments-list','expired-clients-list',  'agenda', 'clients-list']; 
+            sections.forEach(id => {
+                const section = document.getElementById(id);
+                if (id === sectionId) {
+                    // Se o usuário clicar na seção ativa, minimiza
+                    if(section.classList.contains('expanded')) {
+                        section.classList.remove('expanded');
+                        section.classList.add('minimized');
+                    } else {
+                        section.classList.remove('minimized');
+                        section.classList.add('expanded');
+                    }
+                } else {
+                    section.classList.add('minimized');
+                    section.classList.remove('expanded');
+                }
+            });
+        }
+
+        async function updateAllData() {
+            await updateAllDataWithSearch();
+        }
+
         document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -1881,15 +1988,20 @@
             const isEdit = !!client.editId;
             if (isEdit) client.id = client.editId;
             delete client.editId;
-            const savedClient = await saveClients(client, isEdit);
-            if (savedClient) {
-                await updateAllData();
-                this.reset();
-                document.getElementById('editId').value = '';
-                document.getElementById('cadastroModalLabel').textContent = 'Cadastrar Cliente';
-                updateAppointmentLabels();
-                bootstrap.Modal.getInstance(document.getElementById('cadastroModal')).hide();
-                alert(isEdit ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!');
+            showLoading();
+            try {
+                const savedClient = await saveClients(client, isEdit);
+                if (savedClient) {
+                    await updateAllData();
+                    this.reset();
+                    document.getElementById('editId').value = '';
+                    document.getElementById('cadastroModalLabel').textContent = 'Cadastrar Cliente';
+                    updateAppointmentLabels();
+                    bootstrap.Modal.getInstance(document.getElementById('cadastroModal')).hide();
+                    alert(isEdit ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!');
+                }
+            } finally {
+                hideLoading();
             }
         });
         
@@ -1903,24 +2015,29 @@
             }
             if (!validateRescheduleForm(reschedule)) return;
 
-            const clients = await getClients();
-            const client = clients.find(c => c.id === reschedule.rescheduleClientId);
-            if (!client) {
-                alert('Cliente não encontrado.');
-                return;
-            }
+            showLoading();
+            try {
+                const clients = await getClients();
+                const client = clients.find(c => c.id === reschedule.rescheduleClientId);
+                if (!client) {
+                    alert('Cliente não encontrado.');
+                    return;
+                }
 
-            // Atualiza apenas data e hora. O tipo de agendamento (application/maintenance) permanece o mesmo.
-            client.appointment_date = reschedule.reschedule_date;
-            client.appointment_time = reschedule.reschedule_time;
-            
-            const savedClient = await saveClients(client, true);
-            
-            if (savedClient) {
-                await updateAllData();
-                this.reset();
-                bootstrap.Modal.getInstance(document.getElementById('rescheduleModal')).hide();
-                alert(`Agendamento de ${client.name} reagendado para ${formatDate(client.appointment_date)} às ${formatTime(client.appointment_time)} com sucesso!`);
+                // Atualiza apenas data e hora. O tipo de agendamento (application/maintenance) permanece o mesmo.
+                client.appointment_date = reschedule.reschedule_date;
+                client.appointment_time = reschedule.reschedule_time;
+                
+                const savedClient = await saveClients(client, true);
+                
+                if (savedClient) {
+                    await updateAllData();
+                    this.reset();
+                    bootstrap.Modal.getInstance(document.getElementById('rescheduleModal')).hide();
+                    alert(`Agendamento de ${client.name} reagendado para ${formatDate(client.appointment_date)} às ${formatTime(client.appointment_time)} com sucesso!`);
+                }
+            } finally {
+                hideLoading();
             }
         });
 
@@ -1933,23 +2050,28 @@
                 maintenance[key] = value;
             }
             if (!validateMaintenanceForm(maintenance)) return;
-            const clients = await getClients();
-            const client = clients.find(c => c.id === maintenance.maintenanceId);
-            if (!client) {
-                alert('Cliente não encontrado.');
-                return;
-            }
-            client.appointment_type = 'maintenance';
-            client.appointment_date = maintenance.new_maintenance_date;
-            client.appointment_time = maintenance.new_maintenance_time;
-            client.maintenance_value = maintenance.new_maintenance_value;
-            client.eyelash_model = maintenance.new_eyelash_model;
-            const savedClient = await saveClients(client, true);
-            if (savedClient) {
-                await updateAllData();
-                this.reset();
-                bootstrap.Modal.getInstance(document.getElementById('newMaintenanceModal')).hide();
-                alert('Nova manutenção agendada com sucesso!');
+            showLoading();
+            try {
+                const clients = await getClients();
+                const client = clients.find(c => c.id === maintenance.maintenanceId);
+                if (!client) {
+                    alert('Cliente não encontrado.');
+                    return;
+                }
+                client.appointment_type = 'maintenance';
+                client.appointment_date = maintenance.new_maintenance_date;
+                client.appointment_time = maintenance.new_maintenance_time;
+                client.maintenance_value = maintenance.new_maintenance_value;
+                client.eyelash_model = maintenance.new_eyelash_model;
+                const savedClient = await saveClients(client, true);
+                if (savedClient) {
+                    await updateAllData();
+                    this.reset();
+                    bootstrap.Modal.getInstance(document.getElementById('newMaintenanceModal')).hide();
+                    alert('Nova manutenção agendada com sucesso!');
+                }
+            } finally {
+                hideLoading();
             }
         });
 
@@ -1971,12 +2093,12 @@
 
         document.getElementById('prevMonth').addEventListener('click', () => {
             currentDate.setMonth(currentDate.getMonth() - 1);
-            updateCalendar();
+            updateAllData();
         });
 
         document.getElementById('nextMonth').addEventListener('click', () => {
             currentDate.setMonth(currentDate.getMonth() + 1);
-            updateCalendar();
+            updateAllData();
         });
 
         document.getElementById('searchInput').addEventListener('input', searchClients);
@@ -1986,13 +2108,13 @@
         // Event listeners para os botões de navegação de agendamentos
         document.getElementById('prev-appointment-btn').addEventListener('click', () => {
             if (currentAppointmentIndex > 0) {
-                updateNextAppointment(currentAppointmentIndex - 1);
+                updateNextAppointmentWithClients(allFutureAppointments, currentAppointmentIndex - 1);
             }
         });
 
         document.getElementById('next-appointment-btn').addEventListener('click', () => {
             if (currentAppointmentIndex < allFutureAppointments.length - 1) {
-                updateNextAppointment(currentAppointmentIndex + 1);
+                updateNextAppointmentWithClients(allFutureAppointments, currentAppointmentIndex + 1);
             }
         });
 
@@ -2035,14 +2157,6 @@
             updateDateTime();
             setInterval(updateDateTime, 60000); // Atualiza a cada minuto
             AOS.init();
-        }
-
-        async function updateAllData() {
-            await updateClientsTable();
-            await updateCalendar();
-            await updateAppointmentsList();
-            await updateNextAppointment(); 
-            await updateExpiredClientsList();
         }
 
         // Inicializa a aplicação quando o DOM estiver completamente carregado
