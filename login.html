@@ -853,11 +853,13 @@
             height: 100%;
             background: rgba(255, 255, 255, 0.9);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
             transition: opacity 0.5s ease-out;
             opacity: 0;
+            gap: 20px;
         }
         .dark-theme #loading-overlay {
             background: rgba(17, 24, 39, 0.9);
@@ -918,6 +920,43 @@
                 transform: rotate(360deg);
                 opacity: 1;
             }
+        }
+        /* Barra de progresso de carregamento */
+        .loading-progress {
+            width: 250px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .progress {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+        .dark-theme .progress {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-light), var(--secondary-light));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .dark-theme .progress-bar {
+            background: linear-gradient(90deg, var(--primary-dark), var(--secondary-dark));
+        }
+        .progress-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-light);
+            min-width: 40px;
+            text-align: right;
+        }
+        .dark-theme .progress-text {
+            color: var(--text-dark);
         }
 
         /* Estilos para a div de Próximo Agendamento minimizável */
@@ -1007,6 +1046,12 @@
             <div class="loading-ring"></div>
             <div class="loading-ring"></div>
             <div class="loading-ring"></div>
+        </div>
+        <div class="loading-progress">
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" id="progressBar"></div>
+            </div>
+            <span class="progress-text" id="progressText">0%</span>
         </div>
     </div>
 
@@ -1407,20 +1452,48 @@
         let currentDate = new Date();
         let allFutureAppointments = []; // Armazena todos os agendamentos futuros ordenados
         let currentAppointmentIndex = 0; // Índice do agendamento atual sendo exibido
+        let progressInterval = null;
 
         // Funções de loading
         function showLoading() {
             const overlay = document.getElementById('loading-overlay');
             overlay.style.display = 'flex';
             setTimeout(() => overlay.style.opacity = '1', 10);
+            startProgress();
         }
 
         function hideLoading() {
             const overlay = document.getElementById('loading-overlay');
-            overlay.style.opacity = '0';
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            // Força 100% antes de esconder
+            updateProgress(100);
             setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 500);
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 500);
+            }, 300);
+        }
+
+        function startProgress() {
+            let progress = 0;
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            progressInterval = setInterval(() => {
+                progress += Math.random() * 10; // Incremento aleatório para simular
+                if (progress > 90) progress = 90; // Para em 90% até o hide
+                updateProgress(Math.floor(progress));
+            }, 100);
+        }
+
+        function updateProgress(percent) {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            progressBar.style.width = percent + '%';
+            progressText.textContent = percent + '%';
         }
 
         function formatDate(dateStr) {
