@@ -1,6 +1,6 @@
 {
-  "name": "Gerenciamento de Cílios",
-  "short_name": "Cílios App",
+  "name": "Gerencia Ilash",
+  "short_name": "Ilash App",
   "description": "Aplicação para gerenciamento de agendamentos de cílios",
   "start_url": ".",
   "display": "standalone",
