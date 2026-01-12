@@ -238,64 +238,63 @@
         }
         /* Animação aprimorada do hamburger para X com morphing suave e elástico */
         .hamburger {
-            position: relative;
-            width: 24px;
-            height: 2px;
-            background: #FFFFFF;
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            transform-origin: center;
-        }
-        .hamburger::before,
-        .hamburger::after {
-            content: '';
-            position: absolute;
-            width: 24px;
-            height: 2px;
-            background: #FFFFFF;
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            transform-origin: center;
-        }
-        .hamburger::before {
-            top: -7px;
-            transform-origin: left center;
-        }
-        .hamburger::after {
-            top: 7px;
-            transform-origin: left center;
-        }
-        .dropdown-toggle[aria-expanded="true"] .hamburger {
-            background: transparent;
-            transform: rotate(45deg) scale(0.8);
-        }
-        .dropdown-toggle[aria-expanded="true"] .hamburger::before {
-            transform: rotate(-90deg) translateX(7px) scaleX(0.8);
-        }
-        .dropdown-toggle[aria-expanded="true"] .hamburger::after {
-            transform: rotate(90deg) translateX(7px) scaleX(0.8);
-        }
-        .dark-theme .hamburger,
-        .dark-theme .hamburger::before,
-        .dark-theme .hamburger::after {
-            background: var(--text-dark);
-        }
-        .dropdown-menu {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
-            border: none;
-            border-radius: 24px;
-            box-shadow: 0 12px 40px rgba(244, 114, 182, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            animation: slideDownGlow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 1rem 0;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(244, 114, 182, 0.15);
-            margin-top: 1rem;
-        }
-        .dark-theme .dropdown-menu {
-            background: linear-gradient(145deg, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.85));
-            box-shadow: 0 12px 40px rgba(109, 40, 217, 0.3), inset 0 1px 0 rgba(0, 0, 0, 0.2);
-            border-color: rgba(109, 40, 217, 0.15);
-        }
+    position: relative;
+    width: 24px;
+    height: 2px;
+    background: #FFFFFF;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transform-origin: center;
+}
+.hamburger::before,
+.hamburger::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 2px;
+    background: #FFFFFF;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transform-origin: center;
+}
+.hamburger::before {
+    top: -7px;
+}
+.hamburger::after {
+    top: 7px;
+}
+.dropdown-toggle[aria-expanded="true"] .hamburger {
+    background: transparent;
+}
+.dropdown-toggle[aria-expanded="true"] .hamburger::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+.dropdown-toggle[aria-expanded="true"] .hamburger::after {
+    top: 0;
+    transform: rotate(-45deg);
+}
+.dark-theme .hamburger,
+.dark-theme .hamburger::before,
+.dark-theme .hamburger::after {
+    background: var(--text-dark);
+}
+.dropdown-menu {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 12px 40px rgba(244, 114, 182, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    animation: slideDownGlow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem 0;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(244, 114, 182, 0.15);
+    margin-top: 1rem;
+}
+.dark-theme .dropdown-menu {
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.95), rgba(17, 24, 39, 0.85));
+    box-shadow: 0 12px 40px rgba(109, 40, 217, 0.3), inset 0 1px 0 rgba(0, 0, 0, 0.2);
+    border-color: rgba(109, 40, 217, 0.15);
+}
         @keyframes slideDownGlow {
             from {
                 opacity: 0;
@@ -1267,6 +1266,10 @@
         #anamneseModal .modal-backdrop {
             z-index: 3059 !important; /* Backdrop um pouco abaixo do modal, mas acima dos outros */
         }
+        
+        #actionMenu.dropdown-toggle::after {
+    display: none !important;
+}
 
     </style>
 </head>
@@ -1286,28 +1289,27 @@
         </div>
     </div>
 
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Gerenciamento de Cílios</a>
-            <div class="d-flex align-items-center gap-3">                
-                <div class="dropdown">
-                    <button class="dropdown-toggle" type="button" id="actionMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="hamburger"></div>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="actionMenu">
-                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#cadastroModal" id="nav-new-client-btn"><i class="bi bi-person-plus"></i>Novo Cliente</a></li>
-                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#messageConfigModal"><i class="bi bi-chat-dots"></i>Configurar Mensagens</a></li>
-                        <li><a class="dropdown-item" href="https://lash-compat.vercel.app/galeria.html" target="_blank"><i class="bi bi-images"></i>Galeria iLash</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
-                    </ul>
-                </div>
-                <span id="currentDateTime"></span>
-                <i id="themeToggle" class="bi bi-sun-fill theme-toggle" aria-label="Alternar tema"></i>
-
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Gerenciamento de Cílios</a>
+        <div class="d-flex align-items-center gap-3">
+            <div class="dropdown">
+                <button class="dropdown-toggle" type="button" id="actionMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="hamburger"></div>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="actionMenu">
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#cadastroModal" id="nav-new-client-btn"><i class="bi bi-person-plus"></i>Novo Cliente</a></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#messageConfigModal"><i class="bi bi-chat-dots"></i>Configurar Mensagens</a></li>
+                    <li><a class="dropdown-item" href="https://lash-eta.vercel.app/galeria.html" target="_blank"><i class="bi bi-images"></i>Galeria iLash</a></li>
+                    <hr class="dropdown-divider">
+                    <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
+                </ul>
             </div>
+            <span id="currentDateTime"></span>
+            <i id="themeToggle" class="bi bi-sun-fill theme-toggle" aria-label="Alternar tema"></i>
         </div>
-    </nav>
+    </div>
+</nav>
     
     <div class="container" style="max-width: 700px;">
         <div id="next-appointment-card" class="card" data-aos="zoom-in">
