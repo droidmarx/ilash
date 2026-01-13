@@ -1476,15 +1476,12 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary" aria-label="Salvar cliente"><i class="bi bi-save-fill"></i> Salvar</button>
-                        </div>
-                    </form>
-                    <!-- Botão Anamnese no modal de cadastro -->
-                    <div class="text-center mt-3">
-                        <button type="button" class="btn btn-anamnese" id="btnAnamneseCadastro" onclick="openAnamneseModal('novo')" disabled>
+                            <button type="submit" class="btn btn-primary" aria-label="Salvar cliente"><i class="bi bi-save-fill"></i> Salvar</button><button type="button" class="btn btn-anamnese" id="btnAnamneseCadastro" onclick="openAnamneseModal('novo')" disabled>
                             <i class="bi bi-clipboard-check"></i> Anamnese
                         </button>
-                    </div>
+                        </div>
+                    </form>
+
                 </div>
             </div>
         </div>
@@ -1640,11 +1637,15 @@
                 <div class="modal-body">
                     <ul class="client-details-list" id="client-details-list"></ul>
                     <!-- Botão Anamnese nos detalhes -->
-                    <div class="text-center mt-3">
-                        <button type="button" class="btn btn-anamnese" id="btnAnamneseDetalhes" onclick="openAnamneseModal('existente')" style="display: none;">
-                            <i class="bi bi-clipboard-check"></i> Anamnese
-                        </button>
-                    </div>
+<div class="d-flex justify-content-center align-items-center mt-3">
+    <button type="button"
+            class="btn btn-anamnese"
+            id="btnAnamneseDetalhes"
+            onclick="openAnamneseModal('existente')"
+            style="display: none;">
+        <i class="bi bi-clipboard-check"></i> Anamnese
+    </button>
+</div>
                     <div class="modal-footer">
                         <a id="whatsappApplicationLink" href="#" target="_blank" class="btn btn-primary" aria-label="Enviar mensagem de aplicação"><i class="bi bi-calendar-check"></i> Aplicação</a>
                         <a id="whatsappMaintenanceLink" href="#" target="_blank" class="btn btn-primary" aria-label="Enviar mensagem de manutenção"><i class="bi bi-wrench-adjustable"></i> Manutenção</a>
